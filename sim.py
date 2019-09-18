@@ -1,6 +1,7 @@
 from point import Point
 from line import Line
 from track import Track
+from race_car import Racecar
 import tkinter
 import csv
 import math
@@ -30,6 +31,7 @@ track_length_value = 0.0
 time_value = 0.0
 
 track = Track()
+racecar = Racecar()
 
 
 def scale():
@@ -74,6 +76,12 @@ def draw_track():
     draw_centerline()
     draw_inside_line()
     draw_outside_line()
+    draw_line(track.inside_points[0].x,
+              track.inside_points[0].y,
+              track.outside_points[0].x,
+              track.outside_points[0].y,
+              2.0,
+              'red')
 
 
 def draw_centerline():
@@ -188,6 +196,31 @@ def draw_data_frame():
     time_data.pack(side='right', fill=tkinter.X)
 
 
+def draw_racecar(x_in, y_in, heading_in, steering_angle_in):
+    racecar.update_car(x_in, y_in, heading_in, steering_angle_in)
+    previous_point = Point(0, 0)
+    for i, point in enumerate(racecar.chassis):
+        if i > 0:
+            draw_line(previous_point.x, previous_point.y, point.x, point.y, 2.0, 'red')
+        previous_point = point
+    for i, point in enumerate(racecar.right_front_wheel):
+        if i > 0:
+            draw_line(previous_point.x, previous_point.y, point.x, point.y, 2.0, 'black')
+        previous_point = point
+    for i, point in enumerate(racecar.right_rear_wheel):
+        if i > 0:
+            draw_line(previous_point.x, previous_point.y, point.x, point.y, 2.0, 'black')
+        previous_point = point
+    for i, point in enumerate(racecar.left_front_wheel):
+        if i > 0:
+            draw_line(previous_point.x, previous_point.y, point.x, point.y, 2.0, 'black')
+        previous_point = point
+    for i, point in enumerate(racecar.left_rear_wheel):
+        if i > 0:
+            draw_line(previous_point.x, previous_point.y, point.x, point.y, 2.0, 'black')
+        previous_point = point
+
+
 # 1280x800, 1440x900, 1680x1050
 # 1280x720, 1366x768, 1920x1080
 main_window = tkinter.Tk()
@@ -218,6 +251,7 @@ map_canvas.pack(side='right', fill=tkinter.Y)
 
 load_track_data()
 draw_track()
+draw_racecar(track.center_points[0].x, track.center_points[0].y, 90, 0)
 
 
 
