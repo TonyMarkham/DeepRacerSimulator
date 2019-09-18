@@ -8,11 +8,10 @@ import math
 
 # TrackFile = "./tracks/China_track.csv"
 TrackFile = "./tracks/Mexico_track.csv"
-window_width = 1920
-window_height = 1080
 map_padding = 20
 track_scale = 1.0
 track_width = 0.64
+position_index = 0
 
 episode_value = 0
 step_value = 0
@@ -196,35 +195,120 @@ def draw_data_frame():
     time_data.pack(side='right', fill=tkinter.X)
 
 
+def adjust_polygon(polygon_in):
+    i = 0
+    while i < len(polygon_in):
+        j = i + 1
+        polygon_in[i] = (polygon_in[i] - track.minimum_x + map_padding / track_scale) * track_scale
+        polygon_in[j] = (polygon_in[j] - track.maximum_y - map_padding / track_scale) * track_scale * -1
+        i += 2
+    return polygon_in
+
+
 def draw_racecar(x_in, y_in, heading_in, steering_angle_in):
+    global racecar_chassis, racecar_right_front_wheel, racecar_right_rear_wheel
+    global racecar_left_front_wheel, racecar_left_rear_wheel
+
     racecar.update_car(x_in, y_in, heading_in, steering_angle_in)
-    previous_point = Point(0, 0)
-    for i, point in enumerate(racecar.chassis):
-        if i > 0:
-            draw_line(previous_point.x, previous_point.y, point.x, point.y, 2.0, 'red')
-        previous_point = point
-    for i, point in enumerate(racecar.right_front_wheel):
-        if i > 0:
-            draw_line(previous_point.x, previous_point.y, point.x, point.y, 2.0, 'black')
-        previous_point = point
-    for i, point in enumerate(racecar.right_rear_wheel):
-        if i > 0:
-            draw_line(previous_point.x, previous_point.y, point.x, point.y, 2.0, 'black')
-        previous_point = point
-    for i, point in enumerate(racecar.left_front_wheel):
-        if i > 0:
-            draw_line(previous_point.x, previous_point.y, point.x, point.y, 2.0, 'black')
-        previous_point = point
-    for i, point in enumerate(racecar.left_rear_wheel):
-        if i > 0:
-            draw_line(previous_point.x, previous_point.y, point.x, point.y, 2.0, 'black')
-        previous_point = point
+
+    map_canvas.delete(racecar_chassis)
+    map_canvas.delete(racecar_right_front_wheel)
+    map_canvas.delete(racecar_right_rear_wheel)
+    map_canvas.delete(racecar_left_front_wheel)
+    map_canvas.delete(racecar_left_rear_wheel)
+
+    chassis = racecar.chassis_polygon.copy()
+    right_front = racecar.right_front_wheel_polygon.copy()
+    right_rear = racecar.right_rear_wheel_polygon.copy()
+    left_front = racecar.left_front_wheel_polygon.copy()
+    left_rear = racecar.left_rear_wheel_polygon.copy()
+
+    racecar_chassis = map_canvas.create_polygon(
+        adjust_polygon(chassis),
+        outline='black',
+        width=0.5,
+        fill='red'
+    )
+    racecar_right_front_wheel = map_canvas.create_polygon(
+        adjust_polygon(right_front),
+        outline='black',
+        width=0.5,
+        fill='black'
+    )
+    racecar_right_rear_wheel = map_canvas.create_polygon(
+        adjust_polygon(right_rear),
+        outline='black',
+        width=0.5,
+        fill='black'
+    )
+    racecar_left_front_wheel = map_canvas.create_polygon(
+        adjust_polygon(left_front),
+        outline='black',
+        width=0.5,
+        fill='black'
+    )
+    racecar_left_rear_wheel = map_canvas.create_polygon(
+        adjust_polygon(left_rear),
+        outline='black',
+        width=0.5,
+        fill='black'
+    )
+
+
+def up_pressed(event):
+    global position_index
+
+    position_index += 1
+    if position_index == len(track.center_points):
+        position_index = position_index - len(track.center_points) + 1
+    next_index = position_index + 1
+    if next_index == len(track.center_points):
+        next_index = next_index - len(track.center_points) + 1
+    if track.center_points[position_index] == track.center_points[next_index]:
+        position_index += 1
+        next_index = position_index + 1
+    draw_racecar(
+        track.center_points[position_index].x,
+        track.center_points[position_index].y,
+        calculate_heading(position_index, next_index),
+        0
+    )
+
+
+def down_pressed(event):
+    global position_index
+
+    position_index -= 1
+    if position_index == 0:
+        position_index = len(track.center_points) - 1
+    next_index = position_index + 1
+    if next_index == len(track.center_points):
+        next_index = next_index - len(track.center_points) + 1
+    if track.center_points[position_index] == track.center_points[next_index]:
+        position_index -= 1
+        next_index = position_index + 1
+    draw_racecar(
+        track.center_points[position_index].x,
+        track.center_points[position_index].y,
+        calculate_heading(position_index, next_index),
+        0
+    )
+
+
+def calculate_heading(index_1, index_2):
+    p1 = track.center_points[index_1]
+    p2 = track.center_points[index_2]
+    dx = p2.x - p1.x
+    dy = p2.y - p1.y
+    return (math.atan2(dy, dx) - math.pi / 2) * 180 / math.pi
 
 
 # 1280x800, 1440x900, 1680x1050
 # 1280x720, 1366x768, 1920x1080
 main_window = tkinter.Tk()
 main_window.title("DeepRacer - Track Simulator")
+main_window.bind("<Up>", up_pressed)
+main_window.bind("<Down>", down_pressed)
 data_canvas = tkinter.Canvas(main_window)
 
 # map_frame_width = 1260
@@ -249,15 +333,20 @@ available_y = main_window.winfo_height() - data_canvas.winfo_height()
 map_canvas = tkinter.Canvas(main_window, width=available_x, height=available_y)
 map_canvas.pack(side='right', fill=tkinter.Y)
 
+pts = [0, 0, -1, 1, 1, 1]
+racecar_chassis = map_canvas.create_polygon(pts, outline='black', width=0.5, fill='red')
+racecar_right_front_wheel = map_canvas.create_polygon(pts, outline='black', width=0.5, fill='black')
+racecar_right_rear_wheel = map_canvas.create_polygon(pts, outline='black', width=0.5, fill='black')
+racecar_left_front_wheel = map_canvas.create_polygon(pts, outline='black', width=0.5, fill='black')
+racecar_left_rear_wheel = map_canvas.create_polygon(pts, outline='black', width=0.5, fill='black')
+
 load_track_data()
 draw_track()
-draw_racecar(track.center_points[0].x, track.center_points[0].y, 90, 0)
-
-
-
-
-
-
-
+draw_racecar(
+    track.center_points[0].x,
+    track.center_points[0].y,
+    calculate_heading(0, 1),
+    0
+)
 
 main_window.mainloop()

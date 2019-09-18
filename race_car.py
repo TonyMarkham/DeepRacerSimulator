@@ -10,6 +10,11 @@ class Racecar(object):
         self.left_front_wheel = []
         self.right_rear_wheel = []
         self.left_rear_wheel = []
+        self.chassis_polygon = []
+        self.right_front_wheel_polygon = []
+        self.left_front_wheel_polygon = []
+        self.right_rear_wheel_polygon = []
+        self.left_rear_wheel_polygon = []
         self.x_position = 0.0
         self.y_position = 0.0
         self.heading = 0.0
@@ -64,6 +69,7 @@ class Racecar(object):
             self.left_rear_wheel[i].x = point.x + x_in
             self.left_rear_wheel[i].y = point.y + y_in
         self.steer(steering_angle_in)
+        self.update_car_polygon()
 
     def rotate(self, heading_in):
         heading_radians = heading_in * math.pi / 180
@@ -156,3 +162,25 @@ class Racecar(object):
             y3 = y2 + dy
             self.left_front_wheel[i].x = x3
             self.left_front_wheel[i].y = y3
+
+    def update_car_polygon(self):
+        self.chassis_polygon = []
+        self.right_front_wheel_polygon = []
+        self.right_rear_wheel_polygon = []
+        self.left_front_wheel_polygon = []
+        self.left_rear_wheel_polygon = []
+        for point in self.chassis:
+            self.chassis_polygon.append(point.x)
+            self.chassis_polygon.append(point.y)
+        for point in self.right_front_wheel:
+            self.right_front_wheel_polygon.append(point.x)
+            self.right_front_wheel_polygon.append(point.y)
+        for point in self.right_rear_wheel:
+            self.right_rear_wheel_polygon.append(point.x)
+            self.right_rear_wheel_polygon.append(point.y)
+        for point in self.left_front_wheel:
+            self.left_front_wheel_polygon.append(point.x)
+            self.left_front_wheel_polygon.append(point.y)
+        for point in self.left_rear_wheel:
+            self.left_rear_wheel_polygon.append(point.x)
+            self.left_rear_wheel_polygon.append(point.y)
