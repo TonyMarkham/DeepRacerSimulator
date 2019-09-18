@@ -10,3 +10,5 @@ python3 sim.py
 
 * Up Arrow: Move Forward
 * Down Arrow: Move Backward
+
+![Mexico_track.png](./img/Mexico_track.png)
