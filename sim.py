@@ -2,6 +2,7 @@ from point import Point
 from line import Line
 from track import Track
 from race_car import Racecar
+from ray import Ray
 import tkinter
 import csv
 import math
@@ -28,6 +29,8 @@ progress_value = 0.0
 closest_waypoint_value = 0
 track_length_value = 0.0
 time_value = 0.0
+
+camera = Ray()
 
 track = Track()
 racecar = Racecar()
@@ -56,6 +59,17 @@ def draw_line(p1x_in, p1y_in, p2x_in, p2y_in, thickness, colour):
     map_canvas.create_line(x1, y1, x2, y2, fill=colour, width=thickness)
 
 
+def create_line(p1x_in, p1y_in, p2x_in, p2y_in, thickness, colour):
+    global map_canvas
+
+    x1 = (p1x_in - track.minimum_x + map_padding / track_scale) * track_scale
+    y1 = (p1y_in - track.maximum_y - map_padding / track_scale) * track_scale * -1
+    x2 = (p2x_in - track.minimum_x + map_padding / track_scale) * track_scale
+    y2 = (p2y_in - track.maximum_y - map_padding / track_scale) * track_scale * -1
+
+    return map_canvas.create_line(x1, y1, x2, y2, fill=colour, width=thickness)
+
+
 def load_track_data():
     previous_point = Point(math.inf, math.inf)
     with open(TrackFile) as csv_file:
@@ -75,12 +89,15 @@ def draw_track():
     draw_centerline()
     draw_inside_line()
     draw_outside_line()
-    draw_line(track.inside_points[0].x,
-              track.inside_points[0].y,
-              track.outside_points[0].x,
-              track.outside_points[0].y,
-              2.0,
-              'red')
+    # Start / Finish Line
+    draw_line(
+        track.inside_points[0].x,
+        track.inside_points[0].y,
+        track.outside_points[0].x,
+        track.outside_points[0].y,
+        2.0,
+        'red'
+    )
 
 
 def draw_centerline():
@@ -208,6 +225,7 @@ def adjust_polygon(polygon_in):
 def draw_racecar(x_in, y_in, heading_in, steering_angle_in):
     global racecar_chassis, racecar_right_front_wheel, racecar_right_rear_wheel
     global racecar_left_front_wheel, racecar_left_rear_wheel
+    global camera_circle, camera_ray
 
     racecar.update_car(x_in, y_in, heading_in, steering_angle_in)
 
@@ -216,6 +234,8 @@ def draw_racecar(x_in, y_in, heading_in, steering_angle_in):
     map_canvas.delete(racecar_right_rear_wheel)
     map_canvas.delete(racecar_left_front_wheel)
     map_canvas.delete(racecar_left_rear_wheel)
+    map_canvas.delete(camera_circle)
+    map_canvas.delete(camera_ray)
 
     chassis = racecar.chassis_polygon.copy()
     right_front = racecar.right_front_wheel_polygon.copy()
@@ -253,6 +273,39 @@ def draw_racecar(x_in, y_in, heading_in, steering_angle_in):
         width=0.5,
         fill='black'
     )
+    v = Point(-math.sin(heading_in * math.pi / 180), math.cos(heading_in * math.pi / 180))
+    camera.define(racecar.camera, v)
+    p1_x = (camera.P1.x - 0.025 - track.minimum_x + map_padding / track_scale) * track_scale
+    p1_y = (camera.P1.y - 0.025 - track.maximum_y - map_padding / track_scale) * track_scale * -1
+    p2_x = (camera.P1.x + 0.025 - track.minimum_x + map_padding / track_scale) * track_scale
+    p2_y = (camera.P1.y + 0.025 - track.maximum_y - map_padding / track_scale) * track_scale * -1
+    camera_circle = map_canvas.create_oval(p1_x, p1_y, p2_x, p2_y, outline='blue')
+    lines = []
+    for inside_line in track.inside_lines:
+        point = camera.find_intersection(inside_line)
+        if camera.find_intersection(inside_line):
+            lines.append(Line(racecar.camera, point))
+    for outside_line in track.outside_lines:
+        point = camera.find_intersection(outside_line)
+        if camera.find_intersection(outside_line):
+            lines.append(Line(racecar.camera, point))
+    shortest = math.inf
+    shortest_index = -1
+    for i, l in enumerate(lines):
+        if l.Length < shortest:
+            shortest = l.Length
+            shortest_index = i
+    if i > -1:
+        camera_ray = create_line(
+            lines[shortest_index].P1.x,
+            lines[shortest_index].P1.y,
+            lines[shortest_index].P2.x,
+            lines[shortest_index].P2.y,
+            0.5,
+            'blue'
+        )
+
+
 
 
 def up_pressed(event):
@@ -339,6 +392,8 @@ racecar_right_front_wheel = map_canvas.create_polygon(pts, outline='black', widt
 racecar_right_rear_wheel = map_canvas.create_polygon(pts, outline='black', width=0.5, fill='black')
 racecar_left_front_wheel = map_canvas.create_polygon(pts, outline='black', width=0.5, fill='black')
 racecar_left_rear_wheel = map_canvas.create_polygon(pts, outline='black', width=0.5, fill='black')
+camera_circle = map_canvas.create_oval(-1, -1, 1, 1, outline='blue')
+camera_ray = create_line(0, 0, 1, 1, 0.5, 'blue')
 
 load_track_data()
 draw_track()
