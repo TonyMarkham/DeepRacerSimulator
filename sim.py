@@ -30,7 +30,9 @@ closest_waypoint_value = 0
 track_length_value = 0.0
 time_value = 0.0
 
-camera = Ray()
+ray_centre = Ray()
+ray_front_right_00 = Ray()
+ray_front_left_00 = Ray()
 
 track = Track()
 racecar = Racecar()
@@ -225,7 +227,8 @@ def adjust_polygon(polygon_in):
 def draw_racecar(x_in, y_in, heading_in, steering_angle_in):
     global racecar_chassis, racecar_right_front_wheel, racecar_right_rear_wheel
     global racecar_left_front_wheel, racecar_left_rear_wheel
-    global camera_circle, camera_ray
+    global camera_circle, centre_ray_line, right_ray_line_00, left_ray_line_00
+    global ray_centre, ray_front_right_00, ray_front_left_00
 
     racecar.update_car(x_in, y_in, heading_in, steering_angle_in)
 
@@ -235,7 +238,9 @@ def draw_racecar(x_in, y_in, heading_in, steering_angle_in):
     map_canvas.delete(racecar_left_front_wheel)
     map_canvas.delete(racecar_left_rear_wheel)
     map_canvas.delete(camera_circle)
-    map_canvas.delete(camera_ray)
+    map_canvas.delete(centre_ray_line)
+    map_canvas.delete(right_ray_line_00)
+    map_canvas.delete(left_ray_line_00)
 
     chassis = racecar.chassis_polygon.copy()
     right_front = racecar.right_front_wheel_polygon.copy()
@@ -273,21 +278,22 @@ def draw_racecar(x_in, y_in, heading_in, steering_angle_in):
         width=0.5,
         fill='black'
     )
+    # Draw Centre Ray
     v = Point(-math.sin(heading_in * math.pi / 180), math.cos(heading_in * math.pi / 180))
-    camera.define(racecar.camera, v)
-    p1_x = (camera.P1.x - 0.025 - track.minimum_x + map_padding / track_scale) * track_scale
-    p1_y = (camera.P1.y - 0.025 - track.maximum_y - map_padding / track_scale) * track_scale * -1
-    p2_x = (camera.P1.x + 0.025 - track.minimum_x + map_padding / track_scale) * track_scale
-    p2_y = (camera.P1.y + 0.025 - track.maximum_y - map_padding / track_scale) * track_scale * -1
+    ray_centre.define(racecar.camera, v)
+    p1_x = (ray_centre.P1.x - 0.025 - track.minimum_x + map_padding / track_scale) * track_scale
+    p1_y = (ray_centre.P1.y - 0.025 - track.maximum_y - map_padding / track_scale) * track_scale * -1
+    p2_x = (ray_centre.P1.x + 0.025 - track.minimum_x + map_padding / track_scale) * track_scale
+    p2_y = (ray_centre.P1.y + 0.025 - track.maximum_y - map_padding / track_scale) * track_scale * -1
     camera_circle = map_canvas.create_oval(p1_x, p1_y, p2_x, p2_y, outline='blue')
     lines = []
     for inside_line in track.inside_lines:
-        point = camera.find_intersection(inside_line)
-        if camera.find_intersection(inside_line):
+        point = ray_centre.find_intersection(inside_line)
+        if ray_centre.find_intersection(inside_line):
             lines.append(Line(racecar.camera, point))
     for outside_line in track.outside_lines:
-        point = camera.find_intersection(outside_line)
-        if camera.find_intersection(outside_line):
+        point = ray_centre.find_intersection(outside_line)
+        if ray_centre.find_intersection(outside_line):
             lines.append(Line(racecar.camera, point))
     shortest = math.inf
     shortest_index = -1
@@ -296,7 +302,7 @@ def draw_racecar(x_in, y_in, heading_in, steering_angle_in):
             shortest = l.Length
             shortest_index = i
     if i > -1:
-        camera_ray = create_line(
+        centre_ray_line = create_line(
             lines[shortest_index].P1.x,
             lines[shortest_index].P1.y,
             lines[shortest_index].P2.x,
@@ -304,8 +310,58 @@ def draw_racecar(x_in, y_in, heading_in, steering_angle_in):
             0.5,
             'blue'
         )
-
-
+    # Draw Right Wheel Ray
+    ray_front_right_00.define(racecar.ray_right_front_00, v)
+    lines = []
+    for inside_line in track.inside_lines:
+        point = ray_front_right_00.find_intersection(inside_line)
+        if point:
+            lines.append(Line(racecar.ray_right_front_00, point))
+    for outside_line in track.outside_lines:
+        point = ray_front_right_00.find_intersection(outside_line)
+        if point:
+            lines.append(Line(racecar.ray_right_front_00, point))
+    shortest = math.inf
+    shortest_index = -1
+    for i, l in enumerate(lines):
+        if l.Length < shortest:
+            shortest = l.Length
+            shortest_index = i
+    if i > -1:
+        right_ray_line_00 = create_line(
+            lines[shortest_index].P1.x,
+            lines[shortest_index].P1.y,
+            lines[shortest_index].P2.x,
+            lines[shortest_index].P2.y,
+            0.5,
+            'blue'
+        )
+    # Draw Left Wheel Ray
+    ray_front_left_00.define(racecar.ray_left_front_00, v)
+    lines = []
+    for inside_line in track.inside_lines:
+        point = ray_front_left_00.find_intersection(inside_line)
+        if point:
+            lines.append(Line(racecar.ray_left_front_00, point))
+    for outside_line in track.outside_lines:
+        point = ray_front_left_00.find_intersection(outside_line)
+        if point:
+            lines.append(Line(racecar.ray_left_front_00, point))
+    shortest = math.inf
+    shortest_index = -1
+    for i, l in enumerate(lines):
+        if l.Length < shortest:
+            shortest = l.Length
+            shortest_index = i
+    if i > -1:
+        left_ray_line_00 = create_line(
+            lines[shortest_index].P1.x,
+            lines[shortest_index].P1.y,
+            lines[shortest_index].P2.x,
+            lines[shortest_index].P2.y,
+            0.5,
+            'blue'
+        )
 
 
 def up_pressed(event):
@@ -393,7 +449,9 @@ racecar_right_rear_wheel = map_canvas.create_polygon(pts, outline='black', width
 racecar_left_front_wheel = map_canvas.create_polygon(pts, outline='black', width=0.5, fill='black')
 racecar_left_rear_wheel = map_canvas.create_polygon(pts, outline='black', width=0.5, fill='black')
 camera_circle = map_canvas.create_oval(-1, -1, 1, 1, outline='blue')
-camera_ray = create_line(0, 0, 1, 1, 0.5, 'blue')
+centre_ray_line = create_line(0, 0, 1, 1, 0.5, 'blue')
+right_ray_line_00 = create_line(0, 0, 1, 1, 0.5, 'blue')
+left_ray_line_00 = create_line(0, 0, 1, 1, 0.5, 'blue')
 
 load_track_data()
 draw_track()

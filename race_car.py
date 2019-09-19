@@ -53,6 +53,8 @@ class Racecar(object):
         self.base_left_rear_wheel_pivot   = Point(-0.050, 0.000)
 
         self.camera = Point(0.000, 0.188)
+        self.ray_right_front_00 = Point(0.075, 0.188)
+        self.ray_left_front_00 = Point(-0.075, 0.188)
 
     def update_car(self, x_in, y_in, heading_in, steering_angle_in):
         self.rotate(heading_in)
@@ -71,16 +73,29 @@ class Racecar(object):
         for i, point in enumerate(self.left_rear_wheel):
             self.left_rear_wheel[i].x = point.x + x_in
             self.left_rear_wheel[i].y = point.y + y_in
+        # Front-Facing Centre Ray
         point = self.camera
         self.camera.x = point.x + x_in
         self.camera.y = point.y + y_in
+        # Front-Facing Right Wheel Ray
+        point = self.ray_right_front_00
+        self.ray_right_front_00.x = point.x + x_in
+        self.ray_right_front_00.y = point.y + y_in
+        # Front-Facing Left Wheel Ray
+        point = self.ray_left_front_00
+        self.ray_left_front_00.x = point.x + x_in
+        self.ray_left_front_00.y = point.y + y_in
+        # Updating Steering Angle
         self.steer(steering_angle_in)
+        # Update Drawn Polygons
         self.update_car_polygon()
 
     def rotate(self, heading_in):
         heading_radians = heading_in * math.pi / 180
         self.chassis = []
         self.camera = Point(0.000, 0.188)
+        self.ray_right_front_00 = Point(0.075, 0.188)
+        self.ray_left_front_00 = Point(-0.075, 0.188)
         for point in self.base_chassis:
             self.chassis.append(
                 Point(
@@ -110,11 +125,24 @@ class Racecar(object):
             y = point.x * math.sin(heading_radians) + point.y * math.cos(heading_radians)
             self.left_rear_wheel[i].x = x
             self.left_rear_wheel[i].y = y
+        # Front-Facing Centre Ray
         point = self.camera
         x = point.x * math.cos(heading_radians) - point.y * math.sin(heading_radians)
         y = point.x * math.sin(heading_radians) + point.y * math.cos(heading_radians)
         self.camera.x = x
         self.camera.y = y
+        # Front-Facing Right Wheel Ray
+        point = self.ray_right_front_00
+        x = point.x * math.cos(heading_radians) - point.y * math.sin(heading_radians)
+        y = point.x * math.sin(heading_radians) + point.y * math.cos(heading_radians)
+        self.ray_right_front_00.x = x
+        self.ray_right_front_00.y = y
+        # Front-Facing Left Wheel Ray
+        point = self.ray_left_front_00
+        x = point.x * math.cos(heading_radians) - point.y * math.sin(heading_radians)
+        y = point.x * math.sin(heading_radians) + point.y * math.cos(heading_radians)
+        self.ray_left_front_00.x = x
+        self.ray_left_front_00.y = y
 
     def locate_wheels(self):
         self.right_front_wheel = []
